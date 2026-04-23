@@ -88,7 +88,7 @@ using (var scope = app.Services.CreateScope())
         {
             Id = Guid.NewGuid(),
             Nome = "Admin",
-            Email = "admin@oficina.com",
+            Email = "giulia.sia@hotmail.com",
             Senha = "123456",
             Perfil = "ADMIN"
         });
