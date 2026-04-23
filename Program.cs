@@ -4,6 +4,12 @@ using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddScoped<ClienteService>();
+builder.Services.AddScoped<VeiculoService>();
+builder.Services.AddScoped<OrdemServicoService>();
+
+builder.Services.AddScoped<AuthService>();
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
