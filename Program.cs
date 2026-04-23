@@ -81,6 +81,20 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     db.Database.Migrate();
+
+    if (!db.Usuarios.Any())
+    {
+        db.Usuarios.Add(new Oficina.API.Models.Usuario
+        {
+            Id = Guid.NewGuid(),
+            Nome = "Admin",
+            Email = "admin@oficina.com",
+            Senha = "123456",
+            Perfil = "ADMIN"
+        });
+
+        db.SaveChanges();
+    }
 }
 
 app.Run();
