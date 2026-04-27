@@ -74,6 +74,7 @@ builder.Services.AddCors(options =>
 });
 
 
+
 var jwtKey = builder.Configuration["Jwt:Key"];
 var key = Encoding.UTF8.GetBytes(jwtKey!);
 
@@ -104,7 +105,7 @@ app.UseSwaggerUI();
 
 app.MapGet("/", () => Results.Redirect("/swagger"));
 
-app.UseCors("PermitirTudo");
+app.UseCors("PermitirFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
