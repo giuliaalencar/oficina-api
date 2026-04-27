@@ -47,6 +47,33 @@ public async Task<IActionResult> Get()
     return Ok(await _service.ListarAsync());
 }
 
+[Authorize(Roles = "ADMIN")]
+[HttpGet("resumo")]
+public async Task<IActionResult> GetResumo()
+{
+    var ordensFinalizadas = await _context.OrdensServico
+        .Where(o => o.Status == "Finalizada" || o.Status == "Entregue")
+        .ToListAsync();
+
+    var totalOrdens = await _context.OrdensServico.CountAsync();
+
+    double tempoMedioHoras = 0;
+
+    if (ordensFinalizadas.Any())
+    {
+        tempoMedioHoras = ordensFinalizadas
+            .Average(o => (DateTime.Now - o.DataEntrada).TotalHours);
+    }
+
+    return Ok(new
+    {
+        totalOrdens,
+        ordensFinalizadas = ordensFinalizadas.Count,
+        tempoMedioHoras = Math.Round(tempoMedioHoras, 2)
+    });
+}
+
+
 [HttpGet("{id}")]
 public async Task<IActionResult> GetById(int id)
 {
