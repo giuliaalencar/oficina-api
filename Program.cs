@@ -84,6 +84,7 @@ builder.Services.AddCors(options =>
 
 
 
+
 var jwtKey = builder.Configuration["Jwt:Key"];
 var key = Encoding.UTF8.GetBytes(jwtKey!);
 
