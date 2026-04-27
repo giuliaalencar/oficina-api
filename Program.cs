@@ -125,18 +125,28 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 
     if (!db.Usuarios.Any())
+{
+    db.Usuarios.Add(new Oficina.API.Models.Usuario
     {
-        db.Usuarios.Add(new Oficina.API.Models.Usuario
-        {
-            Id = Guid.NewGuid(),
-            Nome = "Admin",
-            Email = "giulia.sia@hotmail.com",
-            Senha = "123456",
-            Perfil = "ADMIN"
-        });
+        Id = Guid.NewGuid(),
+        Nome = "Admin",
+        Email = "giulia.sia@hotmail.com",
+        Senha = "123456",
+        Perfil = "ADMIN"
+    });
 
-        db.SaveChanges();
-    }
+    db.Usuarios.Add(new Oficina.API.Models.Usuario
+    {
+        Id = Guid.NewGuid(),
+        Nome = "Cliente Teste",
+        Email = "cliente@teste.com",
+        Senha = "123456",
+        Perfil = "CLIENTE"
+    });
+
+    db.SaveChanges();
+}
+
 }
 
 

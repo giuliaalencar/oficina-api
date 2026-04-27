@@ -7,7 +7,7 @@ namespace Oficina.API.Controllers
 {
     [ApiController]
     [Route("api/clientes")]
-    [Authorize]
+    [Authorize(Roles = "ADMIN")]
     public class ClientesController : ControllerBase
     {
         private readonly ClienteService _clienteService;
