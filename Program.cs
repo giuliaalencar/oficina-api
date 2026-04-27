@@ -13,15 +13,9 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    if (builder.Environment.IsProduction())
-    {
-        options.UseSqlServer(connectionString);
-    }
-    else
-    {
-        options.UseSqlite(connectionString);
-    }
+    options.UseSqlServer(connectionString);
 });
+
 
 
 

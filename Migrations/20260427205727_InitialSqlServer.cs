@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Oficina.API.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialSqlite : Migration
+    public partial class InitialSqlServer : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,11 +15,11 @@ namespace Oficina.API.Migrations
                 name: "Clientes",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Nome = table.Column<string>(type: "TEXT", nullable: false),
-                    Email = table.Column<string>(type: "TEXT", nullable: false),
-                    Telefone = table.Column<string>(type: "TEXT", nullable: false),
-                    CpfCnpj = table.Column<string>(type: "TEXT", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Nome = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Telefone = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CpfCnpj = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -30,13 +30,13 @@ namespace Oficina.API.Migrations
                 name: "Itens",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    Descricao = table.Column<string>(type: "TEXT", nullable: false),
-                    Valor = table.Column<decimal>(type: "TEXT", nullable: false),
-                    Estoque = table.Column<int>(type: "INTEGER", nullable: false),
-                    EstoqueReservado = table.Column<int>(type: "INTEGER", nullable: false),
-                    Tipo = table.Column<string>(type: "TEXT", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Descricao = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Valor = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Estoque = table.Column<int>(type: "int", nullable: false),
+                    EstoqueReservado = table.Column<int>(type: "int", nullable: false),
+                    Tipo = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -47,11 +47,11 @@ namespace Oficina.API.Migrations
                 name: "Usuarios",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Nome = table.Column<string>(type: "TEXT", nullable: false),
-                    Email = table.Column<string>(type: "TEXT", nullable: false),
-                    Senha = table.Column<string>(type: "TEXT", nullable: false),
-                    Perfil = table.Column<string>(type: "TEXT", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Nome = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Senha = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Perfil = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -62,12 +62,12 @@ namespace Oficina.API.Migrations
                 name: "Veiculos",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "TEXT", nullable: false),
-                    ClienteId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    Placa = table.Column<string>(type: "TEXT", nullable: false),
-                    Marca = table.Column<string>(type: "TEXT", nullable: false),
-                    Modelo = table.Column<string>(type: "TEXT", nullable: false),
-                    Ano = table.Column<int>(type: "INTEGER", nullable: false)
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ClienteId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Placa = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Marca = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Modelo = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Ano = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -84,12 +84,12 @@ namespace Oficina.API.Migrations
                 name: "OrdensServico",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    VeiculoId = table.Column<Guid>(type: "TEXT", nullable: false),
-                    DataEntrada = table.Column<DateTime>(type: "TEXT", nullable: false),
-                    Status = table.Column<string>(type: "TEXT", nullable: false),
-                    ValorTotal = table.Column<decimal>(type: "TEXT", precision: 18, scale: 2, nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    VeiculoId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    DataEntrada = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ValorTotal = table.Column<decimal>(type: "decimal(18,2)", precision: 18, scale: 2, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -106,14 +106,14 @@ namespace Oficina.API.Migrations
                 name: "OrdensServicoItens",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "INTEGER", nullable: false)
-                        .Annotation("Sqlite:Autoincrement", true),
-                    OrdemServicoId = table.Column<int>(type: "INTEGER", nullable: false),
-                    ItemId = table.Column<int>(type: "INTEGER", nullable: false),
-                    Quantidade = table.Column<int>(type: "INTEGER", nullable: false),
-                    Valor = table.Column<decimal>(type: "TEXT", nullable: false),
-                    EstoqueReservado = table.Column<bool>(type: "INTEGER", nullable: false),
-                    EstoqueBaixado = table.Column<bool>(type: "INTEGER", nullable: false)
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    OrdemServicoId = table.Column<int>(type: "int", nullable: false),
+                    ItemId = table.Column<int>(type: "int", nullable: false),
+                    Quantidade = table.Column<int>(type: "int", nullable: false),
+                    Valor = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    EstoqueReservado = table.Column<bool>(type: "bit", nullable: false),
+                    EstoqueBaixado = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
