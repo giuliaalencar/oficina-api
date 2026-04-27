@@ -9,10 +9,10 @@ using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
     if (builder.Environment.IsProduction())
     {
         options.UseSqlServer(connectionString);
@@ -22,6 +22,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseSqlite(connectionString);
     }
 });
+
 
 
 builder.Services.AddScoped<ClienteService>();
