@@ -120,64 +120,71 @@ app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
 {
-    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
     try
     {
-        context.Database.Migrate();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        try
+        {
+            context.Database.Migrate();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Erro ao aplicar migrations:");
+            Console.WriteLine(ex.Message);
+        }
+
+        var passwordHasher = new PasswordHasher<Usuario>();
+
+        if (!context.Usuarios.Any(u => u.Email == "giulia.sia@hotmail.com"))
+        {
+            var admin = new Usuario
+            {
+                Nome = "Giulia Admin",
+                Email = "giulia.sia@hotmail.com",
+                Perfil = "ADMIN"
+            };
+
+            admin.Senha = passwordHasher.HashPassword(admin, "123456");
+
+            context.Usuarios.Add(admin);
+        }
+
+        if (!context.Usuarios.Any(u => u.Email == "cliente@teste.com"))
+        {
+            var cliente = new Usuario
+            {
+                Nome = "Cliente Teste",
+                Email = "cliente@teste.com",
+                Perfil = "CLIENTE"
+            };
+
+            cliente.Senha = passwordHasher.HashPassword(cliente, "123456");
+
+            context.Usuarios.Add(cliente);
+        }
+
+        if (!context.Usuarios.Any(u => u.Email == "funcionario@teste.com"))
+        {
+            var funcionario = new Usuario
+            {
+                Nome = "Funcionario Teste",
+                Email = "funcionario@teste.com",
+                Perfil = "FUNCIONARIO"
+            };
+
+            funcionario.Senha = passwordHasher.HashPassword(funcionario, "123456");
+
+            context.Usuarios.Add(funcionario);
+        }
+
+        context.SaveChanges();
     }
     catch (Exception ex)
     {
-        Console.WriteLine("Erro ao aplicar migrations:");
+        Console.WriteLine("Erro ao criar usuarios padrao:");
         Console.WriteLine(ex.Message);
     }
-
-    var passwordHasher = new PasswordHasher<Usuario>();
-
-
-    if (!context.Usuarios.Any(u => u.Email == "giulia.sia@hotmail.com"))
-    {
-        var admin = new Usuario
-        {
-            Nome = "Giulia Admin",
-            Email = "giulia.sia@hotmail.com",
-            Perfil = "ADMIN"
-        };
-
-        admin.Senha = passwordHasher.HashPassword(admin, "123456");
-
-        context.Usuarios.Add(admin);
-    }
-
-    if (!context.Usuarios.Any(u => u.Email == "cliente@teste.com"))
-    {
-        var cliente = new Usuario
-        {
-            Nome = "Cliente Teste",
-            Email = "cliente@teste.com",
-            Perfil = "CLIENTE"
-        };
-
-        cliente.Senha = passwordHasher.HashPassword(cliente, "123456");
-
-        context.Usuarios.Add(cliente);
-    }
-
-    if (!context.Usuarios.Any(u => u.Email == "funcionario@teste.com"))
-    {
-        var funcionario = new Usuario
-        {
-            Nome = "Funcionário Teste",
-            Email = "funcionario@teste.com",
-            Perfil = "FUNCIONARIO"
-        };
-
-        funcionario.Senha = passwordHasher.HashPassword(funcionario, "123456");
-
-        context.Usuarios.Add(funcionario);
-    }
-
-    context.SaveChanges();
 }
 
 app.Run();
