@@ -37,8 +37,9 @@ namespace Oficina.API.Controllers
             return Ok(usuarios);
         }
 
-        [Authorize(Roles = "ADMIN")]
-        [HttpPost("usuarios")]
+        [AllowAnonymous]
+[HttpPost("usuarios")]
+
         public async Task<IActionResult> CadastrarUsuario([FromBody] CriarUsuarioDTO dto)
         {
             var resultado = await _authService.CadastrarUsuarioAsync(dto);
