@@ -122,9 +122,18 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    context.Database.Migrate();
+    try
+    {
+        context.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("Erro ao aplicar migrations:");
+        Console.WriteLine(ex.Message);
+    }
 
     var passwordHasher = new PasswordHasher<Usuario>();
+
 
     if (!context.Usuarios.Any(u => u.Email == "giulia.sia@hotmail.com"))
     {
