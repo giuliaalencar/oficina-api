@@ -69,10 +69,15 @@ namespace Oficina.API.Services
             if (emailJaExiste)
                 return (false, "Usuário já cadastrado.");
 
-            var perfil = dto.Perfil.Trim().ToUpper();
+            var perfilNome = dto.Perfil switch
+{
+    1 => "ADMIN",
+    2 => "CLIENTE",
+    _ => ""
+};
 
-            if (perfil != "ADMIN" && perfil != "CLIENTE")
-                return (false, "Perfil inválido. Use ADMIN ou CLIENTE.");
+if (string.IsNullOrWhiteSpace(perfilNome))
+    return (false, "Perfil inválido. Use 1 para ADMIN ou 2 para CLIENTE.");
 
             var usuario = new Usuario
             {
