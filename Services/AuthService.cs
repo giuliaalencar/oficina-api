@@ -23,42 +23,47 @@ namespace Oficina.API.Services
 
         public async Task<string?> LoginAsync(LoginDto dto)
         {
-            var usuario = await _context.Usuarios
-                .FirstOrDefaultAsync(u => u.Email == dto.Email);
+            try
+            {
+                var usuario = await _context.Usuarios
+                    .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
-            if (usuario == null)
+                if (usuario == null)
+                    return null;
+
+                var senhaValida = false;
+
+                if (usuario.Senha == dto.Senha)
+                {
+                    senhaValida = true;
+                }
+                else
+                {
+                    try
+                    {
+                        var passwordHasher = new PasswordHasher<Usuario>();
+                        var resultadoSenha = passwordHasher.VerifyHashedPassword(usuario, usuario.Senha, dto.Senha);
+
+                        senhaValida = resultadoSenha != PasswordVerificationResult.Failed;
+                    }
+                    catch
+                    {
+                        senhaValida = false;
+                    }
+                }
+
+                if (!senhaValida)
+                    return null;
+
+                return GerarToken(usuario);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Erro no login:");
+                Console.WriteLine(ex.Message);
+
                 return null;
-
-            var senhaValida = false;
-
-if (usuario.Senha == dto.Senha)
-{
-    senhaValida = true;
-
-    var passwordHasherTexto = new PasswordHasher<Usuario>();
-    usuario.Senha = passwordHasherTexto.HashPassword(usuario, dto.Senha);
-    await _context.SaveChangesAsync();
-}
-else
-{
-    try
-    {
-        var passwordHasher = new PasswordHasher<Usuario>();
-        var resultadoSenha = passwordHasher.VerifyHashedPassword(usuario, usuario.Senha, dto.Senha);
-
-        senhaValida = resultadoSenha != PasswordVerificationResult.Failed;
-    }
-    catch
-    {
-        senhaValida = false;
-    }
-}
-
-if (!senhaValida)
-    return null;
-
-return GerarToken(usuario);
-
+            }
         }
 
         public async Task<List<UsuarioDTO>> ListarUsuariosAsync()
