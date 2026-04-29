@@ -16,15 +16,25 @@ namespace Oficina.API.Controllers
             _authService = authService;
         }
 
+        [AllowAnonymous]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             var token = await _authService.LoginAsync(dto);
 
             if (token == null)
-                return Unauthorized("ERR_005 - Login inválido.");
+                return Unauthorized("Email ou senha inválidos.");
 
             return Ok(new { token });
+        }
+
+        [Authorize(Roles = "ADMIN")]
+        [HttpGet("usuarios")]
+        public async Task<IActionResult> ListarUsuarios()
+        {
+            var usuarios = await _authService.ListarUsuariosAsync();
+
+            return Ok(usuarios);
         }
 
         [Authorize(Roles = "ADMIN")]
@@ -36,7 +46,7 @@ namespace Oficina.API.Controllers
             if (!resultado.Sucesso)
                 return BadRequest(resultado.Erro);
 
-            return Ok("Usuário cadastrado com sucesso.");
+            return Ok(new { mensagem = "Usuário cadastrado com sucesso." });
         }
     }
 }

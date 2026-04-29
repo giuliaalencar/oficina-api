@@ -7,7 +7,8 @@ namespace Oficina.API.Controllers
 {
     [ApiController]
     [Route("api/veiculos")]
-    [Authorize(Roles = "ADMIN")]
+    [Authorize(Roles = "ADMIN,FUNCIONARIO")]
+
     public class VeiculosController : ControllerBase
     {
         private readonly VeiculoService _veiculoService;

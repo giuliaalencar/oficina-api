@@ -9,7 +9,8 @@ namespace Oficina.API.Controllers
 {
     [ApiController]
     [Route("api/itens")]
-    [Authorize(Roles = "ADMIN")]
+    [Authorize(Roles = "ADMIN,FUNCIONARIO")]
+
     public class ItensController : ControllerBase
     {
         private readonly AppDbContext _context;

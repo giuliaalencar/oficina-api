@@ -1,37 +1,78 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Oficina.API.Context;
+using Oficina.API.Models;
 using Oficina.API.Services;
 using System.Text;
-using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "chave_padrao_muito_segura_para_desenvolvimento";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "OficinaAPI";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "OficinaFront";
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseSqlServer(connectionString);
+    if (!string.IsNullOrWhiteSpace(connectionString))
+    {
+        options.UseSqlServer(connectionString);
+    }
+    else
+    {
+        options.UseSqlite("Data Source=oficina.db");
+    }
 });
 
-
-
-
+builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<VeiculoService>();
 builder.Services.AddScoped<OrdemServicoService>();
 
-builder.Services.AddScoped<AuthService>();
+builder.Services.AddControllers();
 
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("CorsPolicy", policy =>
     {
-        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        policy
+            .SetIsOriginAllowed(origin =>
+                origin == "http://localhost:4200" ||
+                origin == "https://oficina-front.vercel.app" ||
+                origin.EndsWith(".vercel.app"))
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = true;
+
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateIssuerSigningKey = true,
+            ValidateLifetime = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
     });
 
+builder.Services.AddAuthorization();
+
 builder.Services.AddEndpointsApiExplorer();
+
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -43,11 +84,10 @@ builder.Services.AddSwaggerGen(options =>
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
+        Description = "Digite: Bearer seu_token",
         In = ParameterLocation.Header,
-        Description = "Digite: Bearer {seu token}"
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -57,8 +97,8 @@ builder.Services.AddSwaggerGen(options =>
             {
                 Reference = new OpenApiReference
                 {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
+                    Id = "Bearer",
+                    Type = ReferenceType.SecurityScheme
                 }
             },
             Array.Empty<string>()
@@ -66,89 +106,69 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("PermitirFrontend", policy =>
-    {
-        policy
-            .WithOrigins(
-                "http://localhost:4200",
-                "https://localhost:4200",
-                "https://oficina-front.vercel.app"
-            )
-            .AllowAnyHeader()
-            .AllowAnyMethod();
-    });
-});
-
-
-
-
-
-var jwtKey = builder.Configuration["Jwt:Key"];
-var key = Encoding.UTF8.GetBytes(jwtKey!);
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.RequireHttpsMetadata = false;
-        options.SaveToken = true;
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateIssuerSigningKey = true,
-            ValidateLifetime = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(key)
-        };
-    });
-
-builder.Services.AddAuthorization();
-
 var app = builder.Build();
 
 app.UseSwagger();
 app.UseSwaggerUI();
 
+app.UseCors("CorsPolicy");
 
-app.MapGet("/", () => Results.Redirect("/swagger"));
-
-app.UseCors("PermitirFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-    if (!db.Usuarios.Any())
-{
-    db.Usuarios.Add(new Oficina.API.Models.Usuario
+    context.Database.Migrate();
+
+    var passwordHasher = new PasswordHasher<Usuario>();
+
+    if (!context.Usuarios.Any(u => u.Email == "giulia.sia@hotmail.com"))
     {
-        Id = Guid.NewGuid(),
-        Nome = "Admin",
-        Email = "giulia.sia@hotmail.com",
-        Senha = "123456",
-        Perfil = "ADMIN"
-    });
+        var admin = new Usuario
+        {
+            Nome = "Giulia Admin",
+            Email = "giulia.sia@hotmail.com",
+            Perfil = "ADMIN"
+        };
 
-    db.Usuarios.Add(new Oficina.API.Models.Usuario
+        admin.Senha = passwordHasher.HashPassword(admin, "123456");
+
+        context.Usuarios.Add(admin);
+    }
+
+    if (!context.Usuarios.Any(u => u.Email == "cliente@teste.com"))
     {
-        Id = Guid.NewGuid(),
-        Nome = "Cliente Teste",
-        Email = "cliente@teste.com",
-        Senha = "123456",
-        Perfil = "CLIENTE"
-    });
+        var cliente = new Usuario
+        {
+            Nome = "Cliente Teste",
+            Email = "cliente@teste.com",
+            Perfil = "CLIENTE"
+        };
 
-    db.SaveChanges();
+        cliente.Senha = passwordHasher.HashPassword(cliente, "123456");
+
+        context.Usuarios.Add(cliente);
+    }
+
+    if (!context.Usuarios.Any(u => u.Email == "funcionario@teste.com"))
+    {
+        var funcionario = new Usuario
+        {
+            Nome = "Funcionário Teste",
+            Email = "funcionario@teste.com",
+            Perfil = "FUNCIONARIO"
+        };
+
+        funcionario.Senha = passwordHasher.HashPassword(funcionario, "123456");
+
+        context.Usuarios.Add(funcionario);
+    }
+
+    context.SaveChanges();
 }
-
-}
-
 
 app.Run();
