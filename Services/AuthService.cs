@@ -29,13 +29,36 @@ namespace Oficina.API.Services
             if (usuario == null)
                 return null;
 
-            var passwordHasher = new PasswordHasher<Usuario>();
-            var resultadoSenha = passwordHasher.VerifyHashedPassword(usuario, usuario.Senha, dto.Senha);
+            var senhaValida = false;
 
-            if (resultadoSenha == PasswordVerificationResult.Failed)
-                return null;
+if (usuario.Senha == dto.Senha)
+{
+    senhaValida = true;
 
-            return GerarToken(usuario);
+    var passwordHasherTexto = new PasswordHasher<Usuario>();
+    usuario.Senha = passwordHasherTexto.HashPassword(usuario, dto.Senha);
+    await _context.SaveChangesAsync();
+}
+else
+{
+    try
+    {
+        var passwordHasher = new PasswordHasher<Usuario>();
+        var resultadoSenha = passwordHasher.VerifyHashedPassword(usuario, usuario.Senha, dto.Senha);
+
+        senhaValida = resultadoSenha != PasswordVerificationResult.Failed;
+    }
+    catch
+    {
+        senhaValida = false;
+    }
+}
+
+if (!senhaValida)
+    return null;
+
+return GerarToken(usuario);
+
         }
 
         public async Task<List<UsuarioDTO>> ListarUsuariosAsync()
