@@ -2,6 +2,7 @@
 using Microsoft.IdentityModel.Tokens;
 using Oficina.API.Context;
 using Oficina.API.DTOs;
+using Oficina.API.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -50,6 +51,42 @@ namespace Oficina.API.Services
             );
 
             return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public async Task<(bool Sucesso, string? Erro)> CadastrarUsuarioAsync(CriarUsuarioDTO dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Nome))
+                return (false, "Informe o nome.");
+
+            if (string.IsNullOrWhiteSpace(dto.Email))
+                return (false, "Informe o email.");
+
+            if (string.IsNullOrWhiteSpace(dto.Senha))
+                return (false, "Informe a senha.");
+
+            var emailJaExiste = await _context.Usuarios.AnyAsync(u => u.Email == dto.Email);
+
+            if (emailJaExiste)
+                return (false, "Usuário já cadastrado.");
+
+            var perfil = dto.Perfil.Trim().ToUpper();
+
+            if (perfil != "ADMIN" && perfil != "CLIENTE")
+                return (false, "Perfil inválido. Use ADMIN ou CLIENTE.");
+
+            var usuario = new Usuario
+            {
+                Id = Guid.NewGuid(),
+                Nome = dto.Nome,
+                Email = dto.Email,
+                Senha = dto.Senha,
+                Perfil = perfil
+            };
+
+            _context.Usuarios.Add(usuario);
+            await _context.SaveChangesAsync();
+
+            return (true, null);
         }
     }
 }

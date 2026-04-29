@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Oficina.API.DTOs;
 using Oficina.API.Services;
 
@@ -24,6 +25,18 @@ namespace Oficina.API.Controllers
                 return Unauthorized("ERR_005 - Login inválido.");
 
             return Ok(new { token });
+        }
+
+        [Authorize(Roles = "ADMIN")]
+        [HttpPost("usuarios")]
+        public async Task<IActionResult> CadastrarUsuario([FromBody] CriarUsuarioDTO dto)
+        {
+            var resultado = await _authService.CadastrarUsuarioAsync(dto);
+
+            if (!resultado.Sucesso)
+                return BadRequest(resultado.Erro);
+
+            return Ok("Usuário cadastrado com sucesso.");
         }
     }
 }
