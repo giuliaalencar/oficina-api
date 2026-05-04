@@ -61,7 +61,6 @@ namespace Oficina.API.Services
             {
                 Console.WriteLine("Erro no login:");
                 Console.WriteLine(ex.Message);
-
                 return null;
             }
         }
@@ -112,11 +111,9 @@ namespace Oficina.API.Services
             {
                 Nome = dto.Nome,
                 Email = dto.Email,
+                Senha = dto.Senha,
                 Perfil = perfilNome
             };
-
-            var passwordHasher = new PasswordHasher<Usuario>();
-            usuario.Senha = passwordHasher.HashPassword(usuario, dto.Senha);
 
             _context.Usuarios.Add(usuario);
             await _context.SaveChangesAsync();
@@ -126,21 +123,30 @@ namespace Oficina.API.Services
 
         public async Task<(bool Sucesso, string? Erro)> ResetarSenhaAsync(string email, string novaSenha)
         {
-            var usuario = await _context.Usuarios
-                .FirstOrDefaultAsync(u => u.Email == email);
+            try
+            {
+                var usuario = await _context.Usuarios
+                    .FirstOrDefaultAsync(u => u.Email == email);
 
-            if (usuario == null)
-                return (false, "Usuário não encontrado.");
+                if (usuario == null)
+                    return (false, "Usuário não encontrado.");
 
-            if (string.IsNullOrWhiteSpace(novaSenha))
-                return (false, "Informe a nova senha.");
+                if (string.IsNullOrWhiteSpace(novaSenha))
+                    return (false, "Informe a nova senha.");
 
-            var passwordHasher = new PasswordHasher<Usuario>();
-            usuario.Senha = passwordHasher.HashPassword(usuario, novaSenha);
+                usuario.Senha = novaSenha;
 
-            await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
 
-            return (true, null);
+                return (true, null);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Erro ao resetar senha:");
+                Console.WriteLine(ex.Message);
+
+                return (false, "Erro ao resetar senha.");
+            }
         }
 
         private string GerarToken(Usuario usuario)
