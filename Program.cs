@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -42,12 +41,20 @@ builder.Services.AddCors(options =>
     {
         policy
             .SetIsOriginAllowed(origin =>
-                origin == "http://localhost:4200" ||
-                origin == "https://oficina-front.vercel.app" ||
-                origin.EndsWith(".vercel.app"))
+            {
+                if (string.IsNullOrWhiteSpace(origin))
+                    return false;
+
+                var uri = new Uri(origin);
+                var host = uri.Host.ToLower();
+
+                return
+                    origin == "http://localhost:4200" ||
+                    origin == "https://oficina-front.vercel.app" ||
+                    host.EndsWith(".vercel.app");
+            })
             .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
+            .AllowAnyMethod();
     });
 });
 
@@ -138,8 +145,6 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("Erro ao aplicar migrations:");
             Console.WriteLine(ex.Message);
         }
-
-        var passwordHasher = new PasswordHasher<Usuario>();
 
         if (!context.Usuarios.Any(u => u.Email == "adminnovo@teste.com"))
         {
