@@ -7,6 +7,8 @@ using Oficina.API.Context;
 using Oficina.API.Models;
 using Oficina.API.Services;
 using System.Text;
+using System.Security.Claims;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,15 +60,18 @@ builder.Services
         options.SaveToken = true;
 
         options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateIssuerSigningKey = true,
-            ValidateLifetime = true,
-            ValidIssuer = jwtIssuer,
-            ValidAudience = jwtAudience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-        };
+{
+    ValidateIssuer = true,
+    ValidateAudience = true,
+    ValidateIssuerSigningKey = true,
+    ValidateLifetime = true,
+    ValidIssuer = jwtIssuer,
+    ValidAudience = jwtAudience,
+    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+    RoleClaimType = ClaimTypes.Role,
+    NameClaimType = ClaimTypes.Name
+};
+
     });
 
 builder.Services.AddAuthorization();
