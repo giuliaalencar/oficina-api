@@ -28,19 +28,25 @@ namespace Oficina.API.Controllers
             return Ok(new { token });
         }
 
-        [Authorize(Roles = "ADMIN")]
+        [Authorize]
         [HttpGet("usuarios")]
         public async Task<IActionResult> ListarUsuarios()
         {
+            if (!UsuarioEhAdmin())
+                return Forbid();
+
             var usuarios = await _authService.ListarUsuariosAsync();
 
             return Ok(usuarios);
         }
 
-        [Authorize(Roles = "ADMIN")]
+        [Authorize]
         [HttpPost("usuarios")]
         public async Task<IActionResult> CadastrarUsuario([FromBody] CriarUsuarioDTO dto)
         {
+            if (!UsuarioEhAdmin())
+                return Forbid();
+
             var resultado = await _authService.CadastrarUsuarioAsync(dto);
 
             if (!resultado.Sucesso)
@@ -49,16 +55,27 @@ namespace Oficina.API.Controllers
             return Ok(new { mensagem = "Usuário cadastrado com sucesso." });
         }
 
-        [Authorize(Roles = "ADMIN")]
+        [Authorize]
         [HttpPost("resetar-senha")]
         public async Task<IActionResult> ResetarSenha([FromBody] LoginDto dto)
         {
+            if (!UsuarioEhAdmin())
+                return Forbid();
+
             var resultado = await _authService.ResetarSenhaAsync(dto.Email, dto.Senha);
 
             if (!resultado.Sucesso)
                 return BadRequest(resultado.Erro);
 
             return Ok(new { mensagem = "Senha resetada com sucesso." });
+        }
+
+        private bool UsuarioEhAdmin()
+        {
+            return User.Claims.Any(c =>
+                (c.Type == "perfil" || c.Type.EndsWith("/role") || c.Type == "role") &&
+                c.Value == "ADMIN"
+            );
         }
     }
 }
