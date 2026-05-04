@@ -37,9 +37,8 @@ namespace Oficina.API.Controllers
             return Ok(usuarios);
         }
 
-        [AllowAnonymous]
-[HttpPost("usuarios")]
-
+        [Authorize(Roles = "ADMIN")]
+        [HttpPost("usuarios")]
         public async Task<IActionResult> CadastrarUsuario([FromBody] CriarUsuarioDTO dto)
         {
             var resultado = await _authService.CadastrarUsuarioAsync(dto);
@@ -48,6 +47,18 @@ namespace Oficina.API.Controllers
                 return BadRequest(resultado.Erro);
 
             return Ok(new { mensagem = "Usuário cadastrado com sucesso." });
+        }
+
+        [AllowAnonymous]
+        [HttpPost("resetar-senha")]
+        public async Task<IActionResult> ResetarSenha([FromBody] LoginDto dto)
+        {
+            var resultado = await _authService.ResetarSenhaAsync(dto.Email, dto.Senha);
+
+            if (!resultado.Sucesso)
+                return BadRequest(resultado.Erro);
+
+            return Ok(new { mensagem = "Senha resetada com sucesso." });
         }
     }
 }
