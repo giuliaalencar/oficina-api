@@ -25,8 +25,10 @@ namespace Oficina.API.Services
         {
             try
             {
+                var email = dto.Email.Trim();
+
                 var usuario = await _context.Usuarios
-                    .FirstOrDefaultAsync(u => u.Email == dto.Email);
+                    .FirstOrDefaultAsync(u => u.Email == email);
 
                 if (usuario == null)
                     return null;
@@ -60,7 +62,7 @@ namespace Oficina.API.Services
             catch (Exception ex)
             {
                 Console.WriteLine("Erro no login:");
-                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.ToString());
                 return null;
             }
         }
@@ -81,52 +83,66 @@ namespace Oficina.API.Services
 
         public async Task<(bool Sucesso, string? Erro)> CadastrarUsuarioAsync(CriarUsuarioDTO dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.Nome))
-                return (false, "Informe o nome.");
-
-            if (string.IsNullOrWhiteSpace(dto.Email))
-                return (false, "Informe o email.");
-
-            if (string.IsNullOrWhiteSpace(dto.Senha))
-                return (false, "Informe a senha.");
-
-            var perfilNome = dto.Perfil switch
+            try
             {
-                1 => "ADMIN",
-                2 => "CLIENTE",
-                3 => "FUNCIONARIO",
-                _ => ""
-            };
+                if (string.IsNullOrWhiteSpace(dto.Nome))
+                    return (false, "Informe o nome.");
 
-            if (string.IsNullOrWhiteSpace(perfilNome))
-                return (false, "Perfil inválido. Use 1 para ADMIN, 2 para CLIENTE ou 3 para FUNCIONARIO.");
+                if (string.IsNullOrWhiteSpace(dto.Email))
+                    return (false, "Informe o email.");
 
-            var emailJaExiste = await _context.Usuarios
-                .AnyAsync(u => u.Email == dto.Email);
+                if (string.IsNullOrWhiteSpace(dto.Senha))
+                    return (false, "Informe a senha.");
 
-            if (emailJaExiste)
-                return (false, "Já existe um usuário com este email.");
+                var perfilNome = dto.Perfil switch
+                {
+                    1 => "ADMIN",
+                    2 => "CLIENTE",
+                    3 => "FUNCIONARIO",
+                    _ => ""
+                };
 
-            var usuario = new Usuario
+                if (string.IsNullOrWhiteSpace(perfilNome))
+                    return (false, "Perfil inválido. Use 1 para ADMIN, 2 para CLIENTE ou 3 para FUNCIONARIO.");
+
+                var email = dto.Email.Trim();
+
+                var emailJaExiste = await _context.Usuarios
+                    .AnyAsync(u => u.Email == email);
+
+                if (emailJaExiste)
+                    return (false, "Já existe um usuário com este email.");
+
+                var usuario = new Usuario
+                {
+                    Nome = dto.Nome.Trim(),
+                    Email = email,
+                    Senha = dto.Senha,
+                    Perfil = perfilNome
+                };
+
+                _context.Usuarios.Add(usuario);
+                await _context.SaveChangesAsync();
+
+                return (true, null);
+            }
+            catch (Exception ex)
             {
-                Nome = dto.Nome,
-                Email = dto.Email,
-                Senha = dto.Senha,
-                Perfil = perfilNome
-            };
+                Console.WriteLine("Erro ao cadastrar usuário:");
+                Console.WriteLine(ex.ToString());
 
-            _context.Usuarios.Add(usuario);
-            await _context.SaveChangesAsync();
-
-            return (true, null);
+                return (false, ex.InnerException?.Message ?? ex.Message);
+            }
         }
 
         public async Task<(bool Sucesso, string? Erro)> ResetarSenhaAsync(string email, string novaSenha)
         {
             try
             {
+                var emailLimpo = email.Trim();
+
                 var usuario = await _context.Usuarios
-                    .FirstOrDefaultAsync(u => u.Email == email);
+                    .FirstOrDefaultAsync(u => u.Email == emailLimpo);
 
                 if (usuario == null)
                     return (false, "Usuário não encontrado.");
@@ -134,7 +150,7 @@ namespace Oficina.API.Services
                 if (string.IsNullOrWhiteSpace(novaSenha))
                     return (false, "Informe a nova senha.");
 
-                usuario.Senha = novaSenha;
+                usuario.Senha = novaSenha.Trim();
 
                 await _context.SaveChangesAsync();
 
@@ -143,9 +159,9 @@ namespace Oficina.API.Services
             catch (Exception ex)
             {
                 Console.WriteLine("Erro ao resetar senha:");
-                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.ToString());
 
-                return (false, "Erro ao resetar senha.");
+                return (false, ex.InnerException?.Message ?? ex.Message);
             }
         }
 
