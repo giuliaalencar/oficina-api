@@ -113,8 +113,16 @@ namespace Oficina.API.Services
                 if (emailJaExiste)
                     return (false, "Já existe um usuário com este email.");
 
+                var proximoId = 1;
+
+                if (await _context.Usuarios.AnyAsync())
+                {
+                    proximoId = await _context.Usuarios.MaxAsync(u => u.Id) + 1;
+                }
+
                 var usuario = new Usuario
                 {
+                    Id = proximoId,
                     Nome = dto.Nome.Trim(),
                     Email = email,
                     Senha = dto.Senha,
