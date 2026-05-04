@@ -40,19 +40,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("CorsPolicy", policy =>
     {
         policy
-            .SetIsOriginAllowed(origin =>
-            {
-                if (string.IsNullOrWhiteSpace(origin))
-                    return false;
-
-                var uri = new Uri(origin);
-                var host = uri.Host.ToLower();
-
-                return
-                    origin == "http://localhost:4200" ||
-                    origin == "https://oficina-front.vercel.app" ||
-                    host.EndsWith(".vercel.app");
-            })
+            .AllowAnyOrigin()
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -146,13 +134,13 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine(ex.Message);
         }
 
-        if (!context.Usuarios.Any(u => u.Email == "adminnovo@teste.com"))
+        if (!context.Usuarios.Any(u => u.Email == "admin@teste.com"))
         {
             var admin = new Usuario
             {
                 Id = Guid.NewGuid(),
                 Nome = "Admin Novo",
-                Email = "adminnovo@teste.com",
+                Email = "admin@teste.com",
                 Senha = "123456",
                 Perfil = "ADMIN"
             };
