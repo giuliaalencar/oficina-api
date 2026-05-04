@@ -6,9 +6,8 @@ using Microsoft.OpenApi.Models;
 using Oficina.API.Context;
 using Oficina.API.Models;
 using Oficina.API.Services;
-using System.Text;
 using System.Security.Claims;
-
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -60,18 +59,17 @@ builder.Services
         options.SaveToken = true;
 
         options.TokenValidationParameters = new TokenValidationParameters
-{
-    ValidateIssuer = true,
-    ValidateAudience = true,
-    ValidateIssuerSigningKey = true,
-    ValidateLifetime = true,
-    ValidIssuer = jwtIssuer,
-    ValidAudience = jwtAudience,
-    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-    RoleClaimType = ClaimTypes.Role,
-    NameClaimType = ClaimTypes.Name
-};
-
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateIssuerSigningKey = true,
+            ValidateLifetime = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            RoleClaimType = ClaimTypes.Role,
+            NameClaimType = ClaimTypes.Name
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -116,6 +114,8 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
+app.MapGet("/", () => Results.Redirect("/swagger"));
+
 app.UseCors("CorsPolicy");
 
 app.UseAuthentication();
@@ -141,16 +141,16 @@ using (var scope = app.Services.CreateScope())
 
         var passwordHasher = new PasswordHasher<Usuario>();
 
-        if (!context.Usuarios.Any(u => u.Email == "giulia.sia@hotmail.com"))
+        if (!context.Usuarios.Any(u => u.Email == "adminnovo@teste.com"))
         {
             var admin = new Usuario
             {
-                Nome = "Giulia Admin",
-                Email = "giulia.sia@hotmail.com",
+                Id = Guid.NewGuid(),
+                Nome = "Admin Novo",
+                Email = "adminnovo@teste.com",
+                Senha = "123456",
                 Perfil = "ADMIN"
             };
-
-            admin.Senha = passwordHasher.HashPassword(admin, "123456");
 
             context.Usuarios.Add(admin);
         }
@@ -159,12 +159,12 @@ using (var scope = app.Services.CreateScope())
         {
             var cliente = new Usuario
             {
+                Id = Guid.NewGuid(),
                 Nome = "Cliente Teste",
                 Email = "cliente@teste.com",
+                Senha = "123456",
                 Perfil = "CLIENTE"
             };
-
-            cliente.Senha = passwordHasher.HashPassword(cliente, "123456");
 
             context.Usuarios.Add(cliente);
         }
@@ -173,12 +173,12 @@ using (var scope = app.Services.CreateScope())
         {
             var funcionario = new Usuario
             {
+                Id = Guid.NewGuid(),
                 Nome = "Funcionario Teste",
                 Email = "funcionario@teste.com",
+                Senha = "123456",
                 Perfil = "FUNCIONARIO"
             };
-
-            funcionario.Senha = passwordHasher.HashPassword(funcionario, "123456");
 
             context.Usuarios.Add(funcionario);
         }
