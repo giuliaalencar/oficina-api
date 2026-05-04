@@ -14,18 +14,51 @@ namespace Oficina.API.Services
             _context = context;
         }
 
-        public async Task<List<OrdemServico>> ListarAsync()
+        public async Task<List<OrdemServicoDto>> ListarAsync()
         {
-            return await _context.OrdensServico
+            var ordens = await _context.OrdensServico
+                .AsNoTracking()
+                .Include(o => o.Veiculo)
+                .ThenInclude(v => v!.Cliente)
                 .Include(o => o.Itens)
+                .ThenInclude(i => i.Item)
+                .OrderByDescending(o => o.Id)
                 .ToListAsync();
+
+            return ordens.Select(MapearOrdem).ToList();
         }
 
-        public async Task<OrdemServico?> BuscarPorIdAsync(int id)
+        public async Task<List<OrdemServicoDto>> ListarPorClienteAsync(string email)
         {
-            return await _context.OrdensServico
+            var ordens = await _context.OrdensServico
+                .AsNoTracking()
+                .Include(o => o.Veiculo)
+                .ThenInclude(v => v!.Cliente)
                 .Include(o => o.Itens)
+                .ThenInclude(i => i.Item)
+                .Where(o => o.Veiculo != null &&
+                            o.Veiculo.Cliente != null &&
+                            o.Veiculo.Cliente.Email == email)
+                .OrderByDescending(o => o.Id)
+                .ToListAsync();
+
+            return ordens.Select(MapearOrdem).ToList();
+        }
+
+        public async Task<OrdemServicoDto?> BuscarPorIdAsync(int id)
+        {
+            var ordem = await _context.OrdensServico
+                .AsNoTracking()
+                .Include(o => o.Veiculo)
+                .ThenInclude(v => v!.Cliente)
+                .Include(o => o.Itens)
+                .ThenInclude(i => i.Item)
                 .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (ordem == null)
+                return null;
+
+            return MapearOrdem(ordem);
         }
 
         public async Task<(bool Sucesso, string? Erro, OrdemServico? OS)> CriarAsync(CriarOrdemServicoDto dto)
@@ -78,7 +111,6 @@ namespace Oficina.API.Services
             };
 
             os.Itens.Add(osItem);
-
             os.ValorTotal = os.Itens.Sum(i => i.Quantidade * i.Valor);
 
             await _context.SaveChangesAsync();
@@ -175,6 +207,39 @@ namespace Oficina.API.Services
             await _context.SaveChangesAsync();
 
             return (true, null);
+        }
+
+        private static OrdemServicoDto MapearOrdem(OrdemServico ordem)
+        {
+            return new OrdemServicoDto
+            {
+                Id = ordem.Id,
+                VeiculoId = ordem.VeiculoId,
+                DataEntrada = ordem.DataEntrada,
+                Status = ordem.Status,
+                ValorTotal = ordem.ValorTotal,
+                Veiculo = ordem.Veiculo == null ? null : new OrdemServicoVeiculoDto
+                {
+                    Id = ordem.Veiculo.Id,
+                    Placa = ordem.Veiculo.Placa,
+                    Marca = ordem.Veiculo.Marca,
+                    Modelo = ordem.Veiculo.Modelo,
+                    Ano = ordem.Veiculo.Ano,
+                    NomeCliente = ordem.Veiculo.Cliente?.Nome,
+                    EmailCliente = ordem.Veiculo.Cliente?.Email
+                },
+                Itens = ordem.Itens.Select(item => new OrdemServicoItemDto
+                {
+                    Id = item.Id,
+                    ItemId = item.ItemId,
+                    Descricao = item.Item?.Descricao ?? string.Empty,
+                    Tipo = item.Item?.Tipo ?? string.Empty,
+                    Quantidade = item.Quantidade,
+                    Valor = item.Valor,
+                    EstoqueReservado = item.EstoqueReservado,
+                    EstoqueBaixado = item.EstoqueBaixado
+                }).ToList()
+            };
         }
     }
 }

@@ -1,12 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Oficina.API.DTOs;
-using Oficina.API.Services;
-using Microsoft.AspNetCore.Authorization;
-using System.Security.Claims;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Oficina.API.Context;
-
-
+using Oficina.API.DTOs;
+using Oficina.API.Services;
+using System.Security.Claims;
 
 namespace Oficina.API.Controllers
 {
@@ -14,94 +12,84 @@ namespace Oficina.API.Controllers
     [Route("api/ordens-servico")]
     [Authorize]
     public class OrdensServicoController : ControllerBase
-{
-    private readonly OrdemServicoService _service;
-    private readonly AppDbContext _context;
-
-    public OrdensServicoController(OrdemServicoService service, AppDbContext context)
     {
-        _service = service;
-        _context = context;
-    }
+        private readonly OrdemServicoService _service;
+        private readonly AppDbContext _context;
 
+        public OrdensServicoController(OrdemServicoService service, AppDbContext context)
+        {
+            _service = service;
+            _context = context;
+        }
 
+        [Authorize(Roles = "ADMIN,FUNCIONARIO,CLIENTE")]
         [HttpGet]
-public async Task<IActionResult> Get()
-{
-    if (User.IsInRole("CLIENTE"))
-    {
-        var email = User.FindFirstValue(ClaimTypes.Email);
+        public async Task<IActionResult> Get()
+        {
+            if (User.IsInRole("CLIENTE"))
+            {
+                var email = User.FindFirstValue(ClaimTypes.Email);
 
-        var ordensCliente = await _context.OrdensServico
-            .Include(o => o.Itens)
-            .Include(o => o.Veiculo)
-            .ThenInclude(v => v!.Cliente)
-            .Where(o => o.Veiculo != null &&
-                        o.Veiculo.Cliente != null &&
-                        o.Veiculo.Cliente.Email == email)
-            .ToListAsync();
+                if (string.IsNullOrWhiteSpace(email))
+                    return Unauthorized();
 
-        return Ok(ordensCliente);
-    }
+                var ordensCliente = await _service.ListarPorClienteAsync(email);
 
-    return Ok(await _service.ListarAsync());
-}
+                return Ok(ordensCliente);
+            }
 
-[Authorize(Roles = "ADMIN")]
-[HttpGet("resumo")]
-public async Task<IActionResult> GetResumo()
-{
-    var ordensFinalizadas = await _context.OrdensServico
-        .Where(o => o.Status == "Finalizada" || o.Status == "Entregue")
-        .ToListAsync();
+            var ordens = await _service.ListarAsync();
 
-    var totalOrdens = await _context.OrdensServico.CountAsync();
+            return Ok(ordens);
+        }
 
-    double tempoMedioHoras = 0;
+        [Authorize(Roles = "ADMIN,FUNCIONARIO")]
+        [HttpGet("resumo")]
+        public async Task<IActionResult> GetResumo()
+        {
+            var ordensFinalizadas = await _context.OrdensServico
+                .Where(o => o.Status == "Finalizada" || o.Status == "Entregue")
+                .ToListAsync();
 
-    if (ordensFinalizadas.Any())
-    {
-        tempoMedioHoras = ordensFinalizadas
-            .Average(o => (DateTime.Now - o.DataEntrada).TotalHours);
-    }
+            var totalOrdens = await _context.OrdensServico.CountAsync();
 
-    return Ok(new
-    {
-        totalOrdens,
-        ordensFinalizadas = ordensFinalizadas.Count,
-        tempoMedioHoras = Math.Round(tempoMedioHoras, 2)
-    });
-}
+            double tempoMedioHoras = 0;
 
+            if (ordensFinalizadas.Any())
+            {
+                tempoMedioHoras = ordensFinalizadas
+                    .Average(o => (DateTime.Now - o.DataEntrada).TotalHours);
+            }
 
-[HttpGet("{id}")]
-public async Task<IActionResult> GetById(int id)
-{
-    var os = await _service.BuscarPorIdAsync(id);
+            return Ok(new
+            {
+                totalOrdens,
+                ordensFinalizadas = ordensFinalizadas.Count,
+                tempoMedioHoras = Math.Round(tempoMedioHoras, 2)
+            });
+        }
 
-    if (os == null)
-        return NotFound();
+        [Authorize(Roles = "ADMIN,FUNCIONARIO,CLIENTE")]
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById(int id)
+        {
+            var os = await _service.BuscarPorIdAsync(id);
 
-    if (User.IsInRole("CLIENTE"))
-    {
-        var email = User.FindFirstValue(ClaimTypes.Email);
+            if (os == null)
+                return NotFound();
 
-        var pertenceAoCliente = await _context.OrdensServico
-            .Include(o => o.Veiculo)
-            .ThenInclude(v => v!.Cliente)
-            .AnyAsync(o => o.Id == id &&
-                           o.Veiculo != null &&
-                           o.Veiculo.Cliente != null &&
-                           o.Veiculo.Cliente.Email == email);
+            if (User.IsInRole("CLIENTE"))
+            {
+                var email = User.FindFirstValue(ClaimTypes.Email);
 
-        if (!pertenceAoCliente)
-            return Forbid("ERR_005 - Não autorizado.");
-    }
+                if (os.Veiculo?.EmailCliente != email)
+                    return Forbid("ERR_005 - Não autorizado.");
+            }
 
-    return Ok(os);
-}
+            return Ok(os);
+        }
 
-        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "ADMIN,FUNCIONARIO")]
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] CriarOrdemServicoDto dto)
         {
@@ -113,7 +101,7 @@ public async Task<IActionResult> GetById(int id)
             return Ok(resultado.OS);
         }
 
-        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "ADMIN,FUNCIONARIO")]
         [HttpPost("{id}/itens")]
         public async Task<IActionResult> AdicionarItem(int id, [FromBody] AdicionarItemOrdemServicoDto dto)
         {
@@ -125,7 +113,7 @@ public async Task<IActionResult> GetById(int id)
             return Ok();
         }
 
-        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "ADMIN,FUNCIONARIO")]
         [HttpPut("{id}/status")]
         public async Task<IActionResult> AtualizarStatus(int id, [FromBody] AtualizarStatusOrdemServicoDto dto)
         {
