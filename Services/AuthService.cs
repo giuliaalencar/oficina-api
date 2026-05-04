@@ -124,6 +124,25 @@ namespace Oficina.API.Services
             return (true, null);
         }
 
+        public async Task<(bool Sucesso, string? Erro)> ResetarSenhaAsync(string email, string novaSenha)
+        {
+            var usuario = await _context.Usuarios
+                .FirstOrDefaultAsync(u => u.Email == email);
+
+            if (usuario == null)
+                return (false, "Usuário não encontrado.");
+
+            if (string.IsNullOrWhiteSpace(novaSenha))
+                return (false, "Informe a nova senha.");
+
+            var passwordHasher = new PasswordHasher<Usuario>();
+            usuario.Senha = passwordHasher.HashPassword(usuario, novaSenha);
+
+            await _context.SaveChangesAsync();
+
+            return (true, null);
+        }
+
         private string GerarToken(Usuario usuario)
         {
             var jwtKey = _configuration["Jwt:Key"] ?? "chave_padrao_muito_segura_para_desenvolvimento";
