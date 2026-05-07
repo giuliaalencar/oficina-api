@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Oficina.API.DTOs;
-using Oficina.API.Services;
+using Oficina.API.Business;
 
 namespace Oficina.API.Controllers
 {
@@ -79,3 +79,4 @@ namespace Oficina.API.Controllers
         }
     }
 }
+

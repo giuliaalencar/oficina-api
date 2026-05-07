@@ -1,9 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Oficina.API.Context;
+using Oficina.API.DAL;
 using Oficina.API.DTOs;
-using Oficina.API.Services;
+using Oficina.API.Business;
 using System.Security.Claims;
 
 namespace Oficina.API.Controllers
@@ -83,7 +83,7 @@ namespace Oficina.API.Controllers
                 var email = User.FindFirstValue(ClaimTypes.Email);
 
                 if (os.Veiculo?.EmailCliente != email)
-                    return Forbid("ERR_005 - Não autorizado.");
+                    return Forbid();
             }
 
             return Ok(os);
@@ -126,3 +126,5 @@ namespace Oficina.API.Controllers
         }
     }
 }
+
+

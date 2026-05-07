@@ -1,4 +1,4 @@
-namespace Oficina.API
+﻿namespace Oficina.API
 {
     public class WeatherForecast
     {
@@ -11,3 +11,4 @@ namespace Oficina.API
         public string? Summary { get; set; }
     }
 }
+

@@ -1,4 +1,4 @@
-namespace Oficina.API.DTOs
+﻿namespace Oficina.API.DTOs
 {
     public class OrdemServicoDto
     {
@@ -53,3 +53,4 @@ namespace Oficina.API.DTOs
         public bool EstoqueBaixado { get; set; }
     }
 }
+

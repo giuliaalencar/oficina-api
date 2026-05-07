@@ -1,10 +1,10 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Oficina.API.Context;
+using Oficina.API.DAL;
 using Oficina.API.Models;
-using Oficina.API.Services;
+using Oficina.API.Business;
 using System.Security.Claims;
 using System.Text;
 
@@ -186,3 +186,7 @@ using (var scope = app.Services.CreateScope())
 }
 
 app.Run();
+
+
+public partial class Program { }
+

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Oficina.API.Context;
+using Oficina.API.DAL;
 using Oficina.API.DTOs;
 using Oficina.API.Models;
 using Microsoft.AspNetCore.Authorization;

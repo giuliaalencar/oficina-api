@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using Oficina.API.Context;
+using Oficina.API.DAL;
 
 #nullable disable
 
@@ -250,3 +250,4 @@ namespace Oficina.API.Migrations
         }
     }
 }
+

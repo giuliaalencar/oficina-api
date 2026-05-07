@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Oficina.API.DTOs;
-using Oficina.API.Services;
+using Oficina.API.Business;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Oficina.API.Controllers
