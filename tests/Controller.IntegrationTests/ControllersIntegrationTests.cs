@@ -458,6 +458,111 @@ public class ControllersIntegrationTests : IClassFixture<OficinaApiFactory>
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+
+    [Fact]
+    public async Task ControllersProtegidos_SemToken_RetornamUnauthorized()
+    {
+        var client = _factory.CreateClient();
+
+        var clientesResponse = await client.GetAsync("/api/clientes");
+        var veiculosResponse = await client.GetAsync("/api/veiculos");
+        var itensResponse = await client.GetAsync("/api/itens");
+        var ordensResponse = await client.GetAsync("/api/ordens-servico");
+        var resumoResponse = await client.GetAsync("/api/ordens-servico/resumo");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, clientesResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, veiculosResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, itensResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, ordensResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, resumoResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task ClienteNaoPodeAcessarCadastrosInternos()
+    {
+        var client = await CriarClienteAutenticadoAsync("cliente@teste.com", "123456");
+
+        var clientesResponse = await client.GetAsync("/api/clientes");
+        var veiculosResponse = await client.GetAsync("/api/veiculos");
+        var itensResponse = await client.GetAsync("/api/itens");
+
+        Assert.Equal(HttpStatusCode.Forbidden, clientesResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, veiculosResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, itensResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task FuncionarioPodeExecutarFluxoOperacional()
+    {
+        var client = await CriarClienteAutenticadoAsync("funcionario@teste.com", "123456");
+
+        var clienteId = await CriarClienteAsync(client, $"funcionario.cliente.{Guid.NewGuid():N}@teste.com");
+        var veiculoId = await CriarVeiculoAsync(client, clienteId);
+        var itemId = await CriarItemAsync(client);
+
+        var criarOrdemResponse = await client.PostAsJsonAsync("/api/ordens-servico", new CriarOrdemServicoDto
+        {
+            VeiculoId = veiculoId
+        });
+
+        Assert.Equal(HttpStatusCode.OK, criarOrdemResponse.StatusCode);
+
+        var ordem = await criarOrdemResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var ordemId = ordem.GetProperty("id").GetInt32();
+
+        var adicionarItemResponse = await client.PostAsJsonAsync($"/api/ordens-servico/{ordemId}/itens", new AdicionarItemOrdemServicoDto
+        {
+            ItemId = itemId,
+            Quantidade = 1
+        });
+
+        var statusResponse = await client.PutAsJsonAsync($"/api/ordens-servico/{ordemId}/status", new AtualizarStatusOrdemServicoDto
+        {
+            Status = "Em Diagnóstico"
+        });
+
+        var resumoResponse = await client.GetAsync("/api/ordens-servico/resumo");
+
+        Assert.Equal(HttpStatusCode.OK, adicionarItemResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, statusResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, resumoResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task ClienteNaoPodeAlterarOrdemServico()
+    {
+        var adminClient = await CriarClienteAutenticadoAsync("admin@teste.com", "123456");
+        var clienteId = await CriarClienteAsync(adminClient, "cliente@teste.com");
+        var veiculoId = await CriarVeiculoAsync(adminClient, clienteId);
+        var itemId = await CriarItemAsync(adminClient);
+
+        var criarOrdemResponse = await adminClient.PostAsJsonAsync("/api/ordens-servico", new CriarOrdemServicoDto
+        {
+            VeiculoId = veiculoId
+        });
+
+        Assert.Equal(HttpStatusCode.OK, criarOrdemResponse.StatusCode);
+
+        var ordem = await criarOrdemResponse.Content.ReadFromJsonAsync<JsonElement>();
+        var ordemId = ordem.GetProperty("id").GetInt32();
+
+        var clienteClient = await CriarClienteAutenticadoAsync("cliente@teste.com", "123456");
+
+        var resumoResponse = await clienteClient.GetAsync("/api/ordens-servico/resumo");
+        var adicionarItemResponse = await clienteClient.PostAsJsonAsync($"/api/ordens-servico/{ordemId}/itens", new AdicionarItemOrdemServicoDto
+        {
+            ItemId = itemId,
+            Quantidade = 1
+        });
+        var statusResponse = await clienteClient.PutAsJsonAsync($"/api/ordens-servico/{ordemId}/status", new AtualizarStatusOrdemServicoDto
+        {
+            Status = "Em Diagnóstico"
+        });
+
+        Assert.Equal(HttpStatusCode.Forbidden, resumoResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, adicionarItemResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, statusResponse.StatusCode);
+    }
     private async Task<HttpClient> CriarClienteAutenticadoAsync(string email, string senha)
     {
         var client = _factory.CreateClient();
@@ -562,4 +667,5 @@ public class ControllersIntegrationTests : IClassFixture<OficinaApiFactory>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 }
+
 
