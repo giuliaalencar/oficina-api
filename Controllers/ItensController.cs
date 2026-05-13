@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Oficina.API.DAL;
+using Oficina.API.Business;
 using Oficina.API.DTOs;
 using Oficina.API.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -14,10 +15,12 @@ namespace Oficina.API.Controllers
     public class ItensController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly EstoqueEmailService _estoqueEmailService;
 
-        public ItensController(AppDbContext context)
+        public ItensController(AppDbContext context, EstoqueEmailService estoqueEmailService)
         {
             _context = context;
+            _estoqueEmailService = estoqueEmailService;
         }
 
         [HttpGet]
@@ -52,6 +55,7 @@ namespace Oficina.API.Controllers
 
             _context.Itens.Add(item);
             await _context.SaveChangesAsync();
+            await _estoqueEmailService.NotificarItensComBaixoEstoqueAsync($"Cadastro do item #{item.Id}");
 
             return CreatedAtAction(nameof(GetById), new { id = item.Id }, item);
         }
@@ -70,8 +74,20 @@ namespace Oficina.API.Controllers
             item.Tipo = dto.Tipo;
 
             await _context.SaveChangesAsync();
+            await _estoqueEmailService.NotificarItensComBaixoEstoqueAsync($"Atualização do item #{item.Id}");
 
             return Ok(item);
+        }
+
+        [HttpPost("notificar-estoque-baixo")]
+        public async Task<IActionResult> NotificarEstoqueBaixo()
+        {
+            var emailEnviado = await _estoqueEmailService.NotificarItensComBaixoEstoqueAsync("Disparo manual pelo sistema");
+
+            if (!emailEnviado)
+                return Ok("Nenhum e-mail enviado. Não existem itens com estoque baixo ou o SMTP não está configurado.");
+
+            return Ok("E-mail de estoque baixo enviado para giulia.sia@hotmail.com.");
         }
 
         [HttpDelete("{id}")]

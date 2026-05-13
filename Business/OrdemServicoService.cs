@@ -8,10 +8,12 @@ namespace Oficina.API.Business
     public class OrdemServicoService
     {
         private readonly AppDbContext _context;
+        private readonly EstoqueEmailService? _estoqueEmailService;
 
-        public OrdemServicoService(AppDbContext context)
+        public OrdemServicoService(AppDbContext context, EstoqueEmailService? estoqueEmailService = null)
         {
             _context = context;
+            _estoqueEmailService = estoqueEmailService;
         }
 
         public async Task<List<OrdemServicoDto>> ListarAsync()
@@ -205,6 +207,11 @@ namespace Oficina.API.Business
             os.Status = dto.Status;
 
             await _context.SaveChangesAsync();
+
+            if (dto.Status == "Em Execução" && _estoqueEmailService != null)
+            {
+                await _estoqueEmailService.NotificarItensComBaixoEstoqueAsync($"Baixa de estoque realizada pela OS #{os.Id}");
+            }
 
             return (true, null);
         }
