@@ -14,11 +14,16 @@ namespace Oficina.API.Controllers
     public class OrdensServicoController : ControllerBase
     {
         private readonly OrdemServicoService _service;
+        private readonly OrcamentoPdfService _orcamentoPdfService;
         private readonly AppDbContext _context;
 
-        public OrdensServicoController(OrdemServicoService service, AppDbContext context)
+        public OrdensServicoController(
+            OrdemServicoService service,
+            OrcamentoPdfService orcamentoPdfService,
+            AppDbContext context)
         {
             _service = service;
+            _orcamentoPdfService = orcamentoPdfService;
             _context = context;
         }
 
@@ -87,6 +92,33 @@ namespace Oficina.API.Controllers
             }
 
             return Ok(os);
+        }
+
+        [Authorize(Roles = "ADMIN,FUNCIONARIO,CLIENTE")]
+        [HttpGet("{id}/orcamento-pdf")]
+        public async Task<IActionResult> GerarOrcamentoPdf(int id)
+        {
+            string? emailCliente = null;
+
+            if (User.IsInRole("CLIENTE"))
+            {
+                emailCliente = User.FindFirstValue(ClaimTypes.Email);
+
+                if (string.IsNullOrWhiteSpace(emailCliente))
+                    return Unauthorized();
+            }
+
+            var resultado = await _orcamentoPdfService.GerarAsync(id, emailCliente);
+
+            if (!resultado.Sucesso)
+            {
+                if (resultado.Erro?.Contains("não encontrada", StringComparison.OrdinalIgnoreCase) == true)
+                    return NotFound(resultado.Erro);
+
+                return Forbid();
+            }
+
+            return File(resultado.Pdf!, "application/pdf", resultado.NomeArquivo);
         }
 
         [Authorize(Roles = "ADMIN,FUNCIONARIO")]

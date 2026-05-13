@@ -365,6 +365,13 @@ public class ControllersIntegrationTests : IClassFixture<OficinaApiFactory>
 
         Assert.Equal(HttpStatusCode.OK, adicionarItemResponse.StatusCode);
 
+        var pdfResponse = await client.GetAsync($"/api/ordens-servico/{ordemId}/orcamento-pdf");
+        var pdfBytes = await pdfResponse.Content.ReadAsByteArrayAsync();
+
+        Assert.Equal(HttpStatusCode.OK, pdfResponse.StatusCode);
+        Assert.Equal("application/pdf", pdfResponse.Content.Headers.ContentType?.MediaType);
+        Assert.StartsWith("%PDF", Encoding.ASCII.GetString(pdfBytes.Take(4).ToArray()));
+
         await AtualizarStatusComSucessoAsync(client, ordemId, "Em Diagnóstico");
         await AtualizarStatusComSucessoAsync(client, ordemId, "Aguardando Aprovação");
         await AtualizarStatusComSucessoAsync(client, ordemId, "Em Execução");
@@ -430,7 +437,9 @@ public class ControllersIntegrationTests : IClassFixture<OficinaApiFactory>
 
         Assert.Equal(HttpStatusCode.OK, (await clienteClient.GetAsync("/api/ordens-servico")).StatusCode);
         Assert.Equal(HttpStatusCode.OK, (await clienteClient.GetAsync($"/api/ordens-servico/{ordemId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await clienteClient.GetAsync($"/api/ordens-servico/{ordemId}/orcamento-pdf")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await clienteClient.GetAsync($"/api/ordens-servico/{outraOrdemId}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await clienteClient.GetAsync($"/api/ordens-servico/{outraOrdemId}/orcamento-pdf")).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await clienteClient.PostAsJsonAsync("/api/ordens-servico", new CriarOrdemServicoDto { VeiculoId = veiculoId })).StatusCode);
     }
 

@@ -32,6 +32,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<ClienteService>();
 builder.Services.AddScoped<VeiculoService>();
 builder.Services.AddScoped<OrdemServicoService>();
+builder.Services.AddScoped<OrcamentoPdfService>();
 
 builder.Services.AddControllers();
 
