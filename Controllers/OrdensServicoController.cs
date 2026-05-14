@@ -156,6 +156,18 @@ namespace Oficina.API.Controllers
 
             return Ok();
         }
+
+        [Authorize(Roles = "ADMIN,FUNCIONARIO")]
+        [HttpPost("{id}/avancar-status")]
+        public async Task<IActionResult> AvancarStatus(int id)
+        {
+            var resultado = await _service.AvancarStatusAsync(id);
+
+            if (!resultado.Sucesso)
+                return BadRequest(resultado.Erro);
+
+            return Ok();
+        }
     }
 }
 

@@ -135,16 +135,9 @@ namespace Oficina.API.Business
             if (statusAtual == null || novoStatus == null)
                 return (false, "ERR_004 - Status inválido.");
 
-            var fluxoValido = new Dictionary<string, string>
-            {
-                { "Recebida", "Em Diagnóstico" },
-                { "Em Diagnóstico", "Aguardando Aprovação" },
-                { "Aguardando Aprovação", "Em Execução" },
-                { "Em Execução", "Finalizada" },
-                { "Finalizada", "Entregue" }
-            };
+            var proximoStatus = ObterProximoStatus(statusAtual);
 
-            if (!fluxoValido.ContainsKey(statusAtual) || fluxoValido[statusAtual] != novoStatus)
+            if (proximoStatus != novoStatus)
                 return (false, "ERR_004 - Não é permitido pular ou voltar status.");
 
             if (novoStatus == "Aguardando Aprovação")
@@ -222,6 +215,31 @@ namespace Oficina.API.Business
             return (true, null);
         }
 
+        public async Task<(bool Sucesso, string? Erro)> AvancarStatusAsync(int id)
+        {
+            var os = await _context.OrdensServico
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o => o.Id == id);
+
+            if (os == null)
+                return (false, "OS não encontrada.");
+
+            var statusAtual = NormalizarStatus(os.Status);
+
+            if (statusAtual == null)
+                return (false, "ERR_004 - Status inválido.");
+
+            var proximoStatus = ObterProximoStatus(statusAtual);
+
+            if (proximoStatus == null)
+                return (false, "ERR_004 - Não existe próximo status para esta ordem.");
+
+            return await AtualizarStatusAsync(id, new AtualizarStatusOrdemServicoDto
+            {
+                Status = proximoStatus
+            });
+        }
+
         private static string? NormalizarStatus(string? status)
         {
             if (string.IsNullOrWhiteSpace(status))
@@ -248,6 +266,19 @@ namespace Oficina.API.Business
             return statusNormalizados.TryGetValue(valor, out var statusNormalizado)
                 ? statusNormalizado
                 : null;
+        }
+
+        private static string? ObterProximoStatus(string statusAtual)
+        {
+            return statusAtual switch
+            {
+                "Recebida" => "Em Diagnóstico",
+                "Em Diagnóstico" => "Aguardando Aprovação",
+                "Aguardando Aprovação" => "Em Execução",
+                "Em Execução" => "Finalizada",
+                "Finalizada" => "Entregue",
+                _ => null
+            };
         }
 
         private static bool EhPeca(string? tipo)
