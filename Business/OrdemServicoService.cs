@@ -164,7 +164,7 @@ namespace Oficina.API.Business
                     if (item == null)
                         return (false, "Item não encontrado.");
 
-                    if (item.Tipo == "Peca")
+                    if (EhPeca(item.Tipo))
                     {
                         var estoqueDisponivel = item.Estoque - item.EstoqueReservado;
 
@@ -196,7 +196,7 @@ namespace Oficina.API.Business
                     if (item == null)
                         return (false, "Item não encontrado.");
 
-                    if (item.Tipo == "Peca")
+                    if (EhPeca(item.Tipo))
                     {
                         if (item.EstoqueReservado < grupo.QuantidadeTotal)
                             return (false, "ERR_003 - Estoque reservado insuficiente.");
@@ -248,6 +248,18 @@ namespace Oficina.API.Business
             return statusNormalizados.TryGetValue(valor, out var statusNormalizado)
                 ? statusNormalizado
                 : null;
+        }
+
+        private static bool EhPeca(string? tipo)
+        {
+            if (string.IsNullOrWhiteSpace(tipo))
+                return false;
+
+            var valor = tipo.Trim();
+
+            return valor.Equals("Peca", StringComparison.OrdinalIgnoreCase) ||
+                   valor.Equals("Pe\u00e7a", StringComparison.OrdinalIgnoreCase) ||
+                   valor.Equals("Pe\u00c3\u00a7a", StringComparison.OrdinalIgnoreCase);
         }
 
         private static OrdemServicoDto MapearOrdem(OrdemServico ordem)

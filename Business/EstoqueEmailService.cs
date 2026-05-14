@@ -31,17 +31,19 @@ namespace Oficina.API.Business
             var quantidadeMinima = ObterQuantidadeMinima();
             var emailDestino = _configuration["Estoque:EmailDestino"] ?? EmailDestinoPadrao;
 
-            var itensBaixoEstoque = await _context.Itens
+            var itens = await _context.Itens
                 .AsNoTracking()
-                .Where(item =>
-                    (item.Tipo == "Peca" || item.Tipo == "Peça") &&
-                    item.Estoque <= quantidadeMinima)
                 .OrderBy(item => item.Estoque)
                 .ThenBy(item => item.Descricao)
                 .ToListAsync();
 
+            var itensBaixoEstoque = itens
+                .Where(item => EhPeca(item.Tipo) && item.Estoque <= quantidadeMinima)
+                .ToList();
+
             if (!itensBaixoEstoque.Any())
             {
+                _logger.LogInformation("E-mail de estoque baixo não enviado porque não existem peças com estoque menor ou igual a {QuantidadeMinima}.", quantidadeMinima);
                 return false;
             }
 
@@ -86,6 +88,18 @@ namespace Oficina.API.Business
             corpo.AppendLine("Acesse o sistema da oficina para repor o estoque.");
 
             return corpo.ToString();
+        }
+
+        private static bool EhPeca(string? tipo)
+        {
+            if (string.IsNullOrWhiteSpace(tipo))
+                return false;
+
+            var valor = tipo.Trim();
+
+            return valor.Equals("Peca", StringComparison.OrdinalIgnoreCase) ||
+                   valor.Equals("Pe\u00e7a", StringComparison.OrdinalIgnoreCase) ||
+                   valor.Equals("Pe\u00c3\u00a7a", StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task<bool> EnviarEmailAsync(string destinatario, string assunto, string corpo)
