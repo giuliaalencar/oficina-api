@@ -38,12 +38,12 @@ namespace Oficina.API.Business
                 .ToListAsync();
 
             var itensBaixoEstoque = itens
-                .Where(item => EhPeca(item.Tipo) && item.Estoque <= quantidadeMinima)
+                .Where(item => EhPeca(item.Tipo) && EstoqueDisponivel(item) <= quantidadeMinima)
                 .ToList();
 
             if (!itensBaixoEstoque.Any())
             {
-                _logger.LogInformation("E-mail de estoque baixo não enviado porque não existem peças com estoque menor ou igual a {QuantidadeMinima}.", quantidadeMinima);
+                _logger.LogInformation("E-mail de estoque baixo não enviado porque não existem peças com estoque disponível menor ou igual a {QuantidadeMinima}.", quantidadeMinima);
                 return false;
             }
 
@@ -81,7 +81,7 @@ namespace Oficina.API.Business
 
             foreach (var item in itens)
             {
-                corpo.AppendLine($"- #{item.Id} | {item.Descricao} | Estoque: {item.Estoque} | Reservado: {item.EstoqueReservado} | Valor: {item.Valor:C}");
+                corpo.AppendLine($"- #{item.Id} | {item.Descricao} | Estoque: {item.Estoque} | Reservado: {item.EstoqueReservado} | Disponível: {EstoqueDisponivel(item)} | Valor: {item.Valor:C}");
             }
 
             corpo.AppendLine();
@@ -100,6 +100,11 @@ namespace Oficina.API.Business
             return valor.Equals("Peca", StringComparison.OrdinalIgnoreCase) ||
                    valor.Equals("Pe\u00e7a", StringComparison.OrdinalIgnoreCase) ||
                    valor.Equals("Pe\u00c3\u00a7a", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static int EstoqueDisponivel(Item item)
+        {
+            return item.Estoque - item.EstoqueReservado;
         }
 
         private async Task<bool> EnviarEmailAsync(string destinatario, string assunto, string corpo)

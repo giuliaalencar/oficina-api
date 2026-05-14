@@ -162,7 +162,10 @@ namespace Oficina.API.Business
                         var estoqueDisponivel = item.Estoque - item.EstoqueReservado;
 
                         if (estoqueDisponivel < grupo.QuantidadeTotal)
+                        {
+                            await NotificarEstoqueBaixoAsync($"Tentativa de reservar estoque sem quantidade suficiente na OS #{os.Id}");
                             return (false, "ERR_003 - Sem estoque.");
+                        }
 
                         item.EstoqueReservado += grupo.QuantidadeTotal;
                     }
@@ -192,7 +195,10 @@ namespace Oficina.API.Business
                     if (EhPeca(item.Tipo))
                     {
                         if (item.EstoqueReservado < grupo.QuantidadeTotal)
+                        {
+                            await NotificarEstoqueBaixoAsync($"Tentativa de baixar estoque sem reserva suficiente na OS #{os.Id}");
                             return (false, "ERR_003 - Estoque reservado insuficiente.");
+                        }
 
                         item.Estoque -= grupo.QuantidadeTotal;
                         item.EstoqueReservado -= grupo.QuantidadeTotal;
@@ -209,7 +215,7 @@ namespace Oficina.API.Business
 
             if (novoStatus == "Em Execução" && _estoqueEmailService != null)
             {
-                await _estoqueEmailService.NotificarItensComBaixoEstoqueAsync($"Baixa de estoque realizada pela OS #{os.Id}");
+                await NotificarEstoqueBaixoAsync($"Baixa de estoque realizada pela OS #{os.Id}");
             }
 
             return (true, null);
@@ -291,6 +297,14 @@ namespace Oficina.API.Business
             return valor.Equals("Peca", StringComparison.OrdinalIgnoreCase) ||
                    valor.Equals("Pe\u00e7a", StringComparison.OrdinalIgnoreCase) ||
                    valor.Equals("Pe\u00c3\u00a7a", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private async Task NotificarEstoqueBaixoAsync(string motivo)
+        {
+            if (_estoqueEmailService != null)
+            {
+                await _estoqueEmailService.NotificarItensComBaixoEstoqueAsync(motivo);
+            }
         }
 
         private static OrdemServicoDto MapearOrdem(OrdemServico ordem)
