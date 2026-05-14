@@ -129,6 +129,12 @@ namespace Oficina.API.Business
             if (os == null)
                 return (false, "OS não encontrada.");
 
+            var statusAtual = NormalizarStatus(os.Status);
+            var novoStatus = NormalizarStatus(dto.Status);
+
+            if (statusAtual == null || novoStatus == null)
+                return (false, "ERR_004 - Status inválido.");
+
             var fluxoValido = new Dictionary<string, string>
             {
                 { "Recebida", "Em Diagnóstico" },
@@ -138,10 +144,10 @@ namespace Oficina.API.Business
                 { "Finalizada", "Entregue" }
             };
 
-            if (!fluxoValido.ContainsKey(os.Status) || fluxoValido[os.Status] != dto.Status)
+            if (!fluxoValido.ContainsKey(statusAtual) || fluxoValido[statusAtual] != novoStatus)
                 return (false, "ERR_004 - Não é permitido pular ou voltar status.");
 
-            if (dto.Status == "Aguardando Aprovação")
+            if (novoStatus == "Aguardando Aprovação")
             {
                 var itensAgrupados = os.Itens
                     .GroupBy(i => i.ItemId)
@@ -173,7 +179,7 @@ namespace Oficina.API.Business
                     itemOs.EstoqueReservado = true;
             }
 
-            if (dto.Status == "Em Execução")
+            if (novoStatus == "Em Execução")
             {
                 var itensAgrupados = os.Itens
                     .GroupBy(i => i.ItemId)
@@ -204,16 +210,44 @@ namespace Oficina.API.Business
                     itemOs.EstoqueBaixado = true;
             }
 
-            os.Status = dto.Status;
+            os.Status = novoStatus;
 
             await _context.SaveChangesAsync();
 
-            if (dto.Status == "Em Execução" && _estoqueEmailService != null)
+            if (novoStatus == "Em Execução" && _estoqueEmailService != null)
             {
                 await _estoqueEmailService.NotificarItensComBaixoEstoqueAsync($"Baixa de estoque realizada pela OS #{os.Id}");
             }
 
             return (true, null);
+        }
+
+        private static string? NormalizarStatus(string? status)
+        {
+            if (string.IsNullOrWhiteSpace(status))
+                return null;
+
+            var valor = status.Trim();
+
+            var statusNormalizados = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "Recebida", "Recebida" },
+                { "Em Diagnóstico", "Em Diagnóstico" },
+                { "Em Diagnostico", "Em Diagnóstico" },
+                { "Em DiagnÃ³stico", "Em Diagnóstico" },
+                { "Aguardando Aprovação", "Aguardando Aprovação" },
+                { "Aguardando Aprovacao", "Aguardando Aprovação" },
+                { "Aguardando AprovaÃ§Ã£o", "Aguardando Aprovação" },
+                { "Em Execução", "Em Execução" },
+                { "Em Execucao", "Em Execução" },
+                { "Em ExecuÃ§Ã£o", "Em Execução" },
+                { "Finalizada", "Finalizada" },
+                { "Entregue", "Entregue" }
+            };
+
+            return statusNormalizados.TryGetValue(valor, out var statusNormalizado)
+                ? statusNormalizado
+                : null;
         }
 
         private static OrdemServicoDto MapearOrdem(OrdemServico ordem)
