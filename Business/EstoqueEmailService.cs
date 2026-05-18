@@ -50,7 +50,7 @@ namespace Oficina.API.Business
             var assunto = $"Oficina - alerta de estoque baixo ({itensBaixoEstoque.Count} item(ns))";
             var corpo = MontarCorpoEmail(itensBaixoEstoque, quantidadeMinima, motivo);
 
-            return await EnviarEmailAsync(emailDestino, assunto, corpo);
+            return await EnviarEmailAsync(emailDestino, assunto, corpo, itensBaixoEstoque.Count);
         }
 
         private int ObterQuantidadeMinima()
@@ -107,7 +107,7 @@ namespace Oficina.API.Business
             return item.Estoque - item.EstoqueReservado;
         }
 
-        private async Task<bool> EnviarEmailAsync(string destinatario, string assunto, string corpo)
+        private async Task<bool> EnviarEmailAsync(string destinatario, string assunto, string corpo, int totalItens)
         {
             var host = _configuration["Email:SmtpHost"];
             var username = _configuration["Email:Username"];
@@ -132,7 +132,9 @@ namespace Oficina.API.Business
                     From = new MailAddress(from, "Oficina"),
                     Subject = assunto,
                     Body = corpo,
-                    IsBodyHtml = false
+                    IsBodyHtml = false,
+                    SubjectEncoding = Encoding.UTF8,
+                    BodyEncoding = Encoding.UTF8
                 };
 
                 mensagem.To.Add(destinatario);
@@ -140,10 +142,17 @@ namespace Oficina.API.Business
                 using var smtp = new SmtpClient(host, port)
                 {
                     EnableSsl = enableSsl,
+                    DeliveryMethod = SmtpDeliveryMethod.Network,
+                    UseDefaultCredentials = false,
                     Credentials = new NetworkCredential(username, password)
                 };
 
                 await smtp.SendMailAsync(mensagem);
+                _logger.LogInformation(
+                    "E-mail de estoque baixo enviado para {Destinatario}. Total de itens: {TotalItens}.",
+                    destinatario,
+                    totalItens);
+
                 return true;
             }
             catch (Exception ex)
