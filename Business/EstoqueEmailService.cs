@@ -115,6 +115,7 @@ namespace Oficina.API.Business
             var from = _configuration["Email:From"] ?? username;
             var port = _configuration.GetValue("Email:SmtpPort", 587);
             var enableSsl = _configuration.GetValue("Email:EnableSsl", true);
+            var timeoutSeconds = _configuration.GetValue("Email:SmtpTimeoutSeconds", 20);
 
             if (string.IsNullOrWhiteSpace(host) ||
                 string.IsNullOrWhiteSpace(username) ||
@@ -144,10 +145,11 @@ namespace Oficina.API.Business
                     EnableSsl = enableSsl,
                     DeliveryMethod = SmtpDeliveryMethod.Network,
                     UseDefaultCredentials = false,
+                    Timeout = timeoutSeconds * 1000,
                     Credentials = new NetworkCredential(username, password)
                 };
 
-                await smtp.SendMailAsync(mensagem);
+                await smtp.SendMailAsync(mensagem).WaitAsync(TimeSpan.FromSeconds(timeoutSeconds));
                 _logger.LogInformation(
                     "E-mail de estoque baixo enviado para {Destinatario}. Total de itens: {TotalItens}.",
                     destinatario,
