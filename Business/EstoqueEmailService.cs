@@ -49,12 +49,15 @@ namespace Oficina.API.Business
             var emailDestino = _configuration["Estoque:EmailDestino"] ?? EmailDestinoPadrao;
             var smtpConfigurado = SmtpEstaConfigurado();
 
-            var itensBaixoEstoque = await _context.Itens
+            var itens = await _context.Itens
                 .AsNoTracking()
                 .OrderBy(item => item.Estoque)
                 .ThenBy(item => item.Descricao)
-                .Where(item => ControlaEstoque(item.Tipo) && EstoqueDisponivel(item) <= quantidadeMinima)
                 .ToListAsync();
+
+            var itensBaixoEstoque = itens
+                .Where(item => ControlaEstoque(item.Tipo) && EstoqueDisponivel(item) <= quantidadeMinima)
+                .ToList();
 
             if (!itensBaixoEstoque.Any())
             {
