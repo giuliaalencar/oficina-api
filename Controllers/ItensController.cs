@@ -82,12 +82,8 @@ namespace Oficina.API.Controllers
         [HttpPost("notificar-estoque-baixo")]
         public async Task<IActionResult> NotificarEstoqueBaixo()
         {
-            var emailEnviado = await _estoqueEmailService.NotificarItensComBaixoEstoqueAsync("Disparo manual pelo sistema");
-
-            if (!emailEnviado)
-                return Ok("Nenhum e-mail enviado. Não existem itens com estoque baixo ou o SMTP não está configurado.");
-
-            return Ok("E-mail de estoque baixo enviado para giulia.sia@hotmail.com.");
+            var resultado = await _estoqueEmailService.NotificarItensComBaixoEstoqueDetalhadoAsync("Disparo manual pelo sistema");
+            return Ok(resultado);
         }
 
         [HttpDelete("{id}")]
