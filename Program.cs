@@ -178,27 +178,7 @@ static void GarantirUsuarioPadrao(
     usuario.Nome = nome;
     usuario.Perfil = perfil;
 
-    if (!SenhaPadraoValida(usuario, passwordHasher, senha))
-        usuario.Senha = passwordHasher.HashPassword(usuario, senha);
-}
-
-static bool SenhaPadraoValida(Usuario usuario, PasswordHasher<Usuario> passwordHasher, string senha)
-{
-    if (usuario.Senha == senha)
-    {
-        usuario.Senha = passwordHasher.HashPassword(usuario, senha);
-        return true;
-    }
-
-    try
-    {
-        var resultado = passwordHasher.VerifyHashedPassword(usuario, usuario.Senha, senha);
-        return resultado != PasswordVerificationResult.Failed;
-    }
-    catch
-    {
-        return false;
-    }
+    usuario.Senha = passwordHasher.HashPassword(usuario, senha);
 }
 
 public partial class Program { }
