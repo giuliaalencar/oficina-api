@@ -194,9 +194,12 @@ namespace Business.UnitTests
 
             var resultado = await service.ResetarSenhaAsync("  admin@teste.com  ", " nova123 ");
             var usuario = context.Usuarios.First(u => u.Email == "admin@teste.com");
+            var resultadoSenha = new PasswordHasher<Usuario>()
+                .VerifyHashedPassword(usuario, usuario.Senha, "nova123");
 
             Assert.True(resultado.Sucesso);
-            Assert.Equal("nova123", usuario.Senha);
+            Assert.NotEqual("nova123", usuario.Senha);
+            Assert.NotEqual(PasswordVerificationResult.Failed, resultadoSenha);
         }
 
         [Fact]

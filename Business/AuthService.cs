@@ -25,6 +25,9 @@ namespace Oficina.API.Business
         {
             try
             {
+                if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Senha))
+                    return null;
+
                 var email = dto.Email.Trim();
 
                 var usuario = await _context.Usuarios
@@ -33,29 +36,17 @@ namespace Oficina.API.Business
                 if (usuario == null)
                     return null;
 
-                var senhaValida = false;
-
-                if (usuario.Senha == dto.Senha)
-                {
-                    senhaValida = true;
-                }
-                else
-                {
-                    try
-                    {
-                        var passwordHasher = new PasswordHasher<Usuario>();
-                        var resultadoSenha = passwordHasher.VerifyHashedPassword(usuario, usuario.Senha, dto.Senha);
-
-                        senhaValida = resultadoSenha != PasswordVerificationResult.Failed;
-                    }
-                    catch
-                    {
-                        senhaValida = false;
-                    }
-                }
+                var passwordHasher = new PasswordHasher<Usuario>();
+                var senhaValida = SenhaConfere(usuario, dto.Senha, passwordHasher);
 
                 if (!senhaValida)
                     return null;
+
+                if (usuario.Senha == dto.Senha)
+                {
+                    usuario.Senha = passwordHasher.HashPassword(usuario, dto.Senha);
+                    await _context.SaveChangesAsync();
+                }
 
                 return GerarToken(usuario);
             }
@@ -118,9 +109,10 @@ namespace Oficina.API.Business
                     Id = Guid.NewGuid(),
                     Nome = dto.Nome.Trim(),
                     Email = email,
-                    Senha = dto.Senha,
                     Perfil = perfilNome
                 };
+
+                usuario.Senha = new PasswordHasher<Usuario>().HashPassword(usuario, dto.Senha.Trim());
 
                 _context.Usuarios.Add(usuario);
                 await _context.SaveChangesAsync();
@@ -151,7 +143,7 @@ namespace Oficina.API.Business
                 if (string.IsNullOrWhiteSpace(novaSenha))
                     return (false, "Informe a nova senha.");
 
-                usuario.Senha = novaSenha.Trim();
+                usuario.Senha = new PasswordHasher<Usuario>().HashPassword(usuario, novaSenha.Trim());
 
                 await _context.SaveChangesAsync();
 
@@ -163,6 +155,22 @@ namespace Oficina.API.Business
                 Console.WriteLine(ex.ToString());
 
                 return (false, ex.InnerException?.Message ?? ex.Message);
+            }
+        }
+
+        private static bool SenhaConfere(Usuario usuario, string senha, PasswordHasher<Usuario> passwordHasher)
+        {
+            if (usuario.Senha == senha)
+                return true;
+
+            try
+            {
+                var resultadoSenha = passwordHasher.VerifyHashedPassword(usuario, usuario.Senha, senha);
+                return resultadoSenha != PasswordVerificationResult.Failed;
+            }
+            catch
+            {
+                return false;
             }
         }
 

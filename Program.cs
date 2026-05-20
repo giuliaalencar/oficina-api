@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -136,47 +137,11 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine(ex.Message);
         }
 
-        if (!context.Usuarios.Any(u => u.Email == "admin@teste.com"))
-        {
-            var admin = new Usuario
-            {
-                Id = Guid.NewGuid(),
-                Nome = "Admin Novo",
-                Email = "admin@teste.com",
-                Senha = "123456",
-                Perfil = "ADMIN"
-            };
+        var passwordHasher = new PasswordHasher<Usuario>();
 
-            context.Usuarios.Add(admin);
-        }
-
-        if (!context.Usuarios.Any(u => u.Email == "cliente@teste.com"))
-        {
-            var cliente = new Usuario
-            {
-                Id = Guid.NewGuid(),
-                Nome = "Cliente Teste",
-                Email = "cliente@teste.com",
-                Senha = "123456",
-                Perfil = "CLIENTE"
-            };
-
-            context.Usuarios.Add(cliente);
-        }
-
-        if (!context.Usuarios.Any(u => u.Email == "funcionario@teste.com"))
-        {
-            var funcionario = new Usuario
-            {
-                Id = Guid.NewGuid(),
-                Nome = "Funcionario Teste",
-                Email = "funcionario@teste.com",
-                Senha = "123456",
-                Perfil = "FUNCIONARIO"
-            };
-
-            context.Usuarios.Add(funcionario);
-        }
+        GarantirUsuarioPadrao(context, passwordHasher, "Admin Novo", "admin@teste.com", "123456", "ADMIN");
+        GarantirUsuarioPadrao(context, passwordHasher, "Cliente Teste", "cliente@teste.com", "123456", "CLIENTE");
+        GarantirUsuarioPadrao(context, passwordHasher, "Funcionario Teste", "funcionario@teste.com", "123456", "FUNCIONARIO");
 
         context.SaveChanges();
     }
@@ -189,6 +154,52 @@ using (var scope = app.Services.CreateScope())
 
 app.Run();
 
+static void GarantirUsuarioPadrao(
+    AppDbContext context,
+    PasswordHasher<Usuario> passwordHasher,
+    string nome,
+    string email,
+    string senha,
+    string perfil)
+{
+    var usuario = context.Usuarios.FirstOrDefault(u => u.Email == email);
+
+    if (usuario == null)
+    {
+        usuario = new Usuario
+        {
+            Id = Guid.NewGuid(),
+            Email = email
+        };
+
+        context.Usuarios.Add(usuario);
+    }
+
+    usuario.Nome = nome;
+    usuario.Perfil = perfil;
+
+    if (!SenhaPadraoValida(usuario, passwordHasher, senha))
+        usuario.Senha = passwordHasher.HashPassword(usuario, senha);
+}
+
+static bool SenhaPadraoValida(Usuario usuario, PasswordHasher<Usuario> passwordHasher, string senha)
+{
+    if (usuario.Senha == senha)
+    {
+        usuario.Senha = passwordHasher.HashPassword(usuario, senha);
+        return true;
+    }
+
+    try
+    {
+        var resultado = passwordHasher.VerifyHashedPassword(usuario, usuario.Senha, senha);
+        return resultado != PasswordVerificationResult.Failed;
+    }
+    catch
+    {
+        return false;
+    }
+}
 
 public partial class Program { }
 
