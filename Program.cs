@@ -15,7 +15,7 @@ var jwtKey = builder.Configuration["Jwt:Key"] ?? "chave_padrao_muito_segura_para
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "OficinaAPI";
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "OficinaFront";
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var connectionString = LimparValorConfiguracao(builder.Configuration.GetConnectionString("DefaultConnection"));
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
@@ -179,6 +179,23 @@ static void GarantirUsuarioPadrao(
     usuario.Perfil = perfil;
 
     usuario.Senha = passwordHasher.HashPassword(usuario, senha);
+}
+
+static string? LimparValorConfiguracao(string? valor)
+{
+    if (string.IsNullOrWhiteSpace(valor))
+        return valor;
+
+    valor = valor.Trim();
+
+    if (valor.Length >= 2 &&
+        ((valor.StartsWith("\"") && valor.EndsWith("\"")) ||
+         (valor.StartsWith("'") && valor.EndsWith("'"))))
+    {
+        valor = valor[1..^1].Trim();
+    }
+
+    return valor;
 }
 
 public partial class Program { }
